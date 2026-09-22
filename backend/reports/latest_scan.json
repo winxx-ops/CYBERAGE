@@ -1,0 +1,411 @@
+{
+  "project": "CyberAge",
+  "target": {
+    "raw_input": "https://adityauniversity.in/",
+    "normalized_url": "https://adityauniversity.in/",
+    "scheme": "https",
+    "hostname": "adityauniversity.in",
+    "port": 443,
+    "ip_address": "210.212.210.85",
+    "base_domain": "adityauniversity.in",
+    "path": "/",
+    "is_reachable": true,
+    "status_code": 200,
+    "response_time_ms": 1190.42,
+    "redirect_chain": [
+      {
+        "url": "https://adityauniversity.in/",
+        "status_code": 301,
+        "headers": {
+          "Date": "Tue, 22 Sep 2026 10:14:25 GMT",
+          "Server": "Apache/2.4.58 (Ubuntu)",
+          "Location": "https://www.adityauniversity.in/",
+          "Content-Length": "326",
+          "Keep-Alive": "timeout=5, max=100",
+          "Connection": "Keep-Alive",
+          "Content-Type": "text/html; charset=iso-8859-1"
+        }
+      }
+    ],
+    "final_destination": "https://www.adityauniversity.in/",
+    "cross_domain_redirect": true,
+    "validation_error": null
+  },
+  "recon": {
+    "hostname": "adityauniversity.in",
+    "ip_address": "210.212.210.85",
+    "reverse_ptr": "N/A (No PTR Record)",
+    "geo": {
+      "country": "India",
+      "country_code": "IN",
+      "region": "Andhra Pradesh",
+      "city": "Peddapuram",
+      "postal": "533256",
+      "latitude": 17.0770061,
+      "longitude": 82.1383567,
+      "timezone": "Asia/Kolkata",
+      "isp": "Bharat Sanchar Nigam Ltd",
+      "asn": "AS9829",
+      "org": "National Internet Backbone",
+      "flag_emoji": "\ud83c\uddee\ud83c\uddf3"
+    },
+    "dns": {
+      "a_records": [
+        "210.212.210.85"
+      ],
+      "aaaa_records": [],
+      "mx_records": [
+        "0 adityauniversity-in.mail.protection.outlook.com."
+      ],
+      "ns_records": [
+        "jocelyn.ns.cloudflare.com.",
+        "nash.ns.cloudflare.com."
+      ],
+      "txt_records": [
+        "fjrbips8cj1tmh6o7kg3dqlgmg",
+        "google-gws-recovery-domain-verification=60933336",
+        "google-site-verification=hCjTpBlusQ23ZCw8pbJFBb2fxc4iwCkfZbZI0_UKYzo",
+        "google-site-verification=prfzpA-SlT5x1y07Ns0ej8sfwzbhrwWWUaNGUxIzMLk",
+        "v=spf1 include:spf.protection.outlook.com -all"
+      ],
+      "cname": null,
+      "reverse_ptr": "N/A (No PTR Record)"
+    },
+    "open_ports": [
+      {
+        "port": 80,
+        "service": "HTTP",
+        "state": "open",
+        "banner": "HTTP/1.1 301 Moved Permanently",
+        "response_time_ms": 23.5
+      },
+      {
+        "port": 110,
+        "service": "POP3",
+        "state": "open",
+        "banner": "POP3 Service Active",
+        "response_time_ms": 6.76
+      },
+      {
+        "port": 443,
+        "service": "HTTPS",
+        "state": "open",
+        "banner": "HTTP/1.1 301 Moved Permanently",
+        "response_time_ms": 26.53
+      },
+      {
+        "port": 8443,
+        "service": "HTTPS-Alt",
+        "state": "open",
+        "banner": "HTTP/1.1 403 Forbidden",
+        "response_time_ms": 50.6
+      }
+    ],
+    "total_ports_scanned": 16,
+    "scan_duration_sec": 13.83
+  },
+  "threatpulse": {
+    "target_domain": "adityauniversity.in",
+    "target_ip": "210.212.210.85",
+    "threat_score": 0,
+    "verdict": "CLEAN",
+    "blacklists_checked": 3,
+    "blacklists_flagged": 0,
+    "flagged_blacklists": [],
+    "factors": [
+      {
+        "name": "Top-Level Domain Reputation",
+        "weight": 0,
+        "triggered": false,
+        "details": "Standard domain suffix (.com, .org, .edu, .net, etc.)."
+      },
+      {
+        "name": "Public Threat Feeds / DNSBL",
+        "weight": 0,
+        "triggered": false,
+        "details": "IP address is clean across all checked threat blocklists."
+      }
+    ],
+    "categories": [
+      "Safe Web Asset"
+    ]
+  },
+  "subdomains": {
+    "base_domain": "adityauniversity.in",
+    "count": 0,
+    "records": []
+  },
+  "directory_scan": {
+    "paths": [
+      {
+        "path": "/robots.txt",
+        "url": "https://adityauniversity.in/robots.txt",
+        "status_code": 301,
+        "content_length": 0,
+        "redirect_location": "https://www.adityauniversity.in/robots.txt",
+        "description": "Crawling Policy File",
+        "is_sensitive": false
+      },
+      {
+        "path": "/sitemap.xml",
+        "url": "https://adityauniversity.in/sitemap.xml",
+        "status_code": 301,
+        "content_length": 0,
+        "redirect_location": "https://www.adityauniversity.in/sitemap.xml",
+        "description": "SEO / Architecture Sitemap",
+        "is_sensitive": false
+      },
+      {
+        "path": "/.git/HEAD",
+        "url": "https://adityauniversity.in/.git/HEAD",
+        "status_code": 301,
+        "content_length": 0,
+        "redirect_location": "https://www.adityauniversity.in/.git/HEAD",
+        "description": "Exposed Git Version Control Repository",
+        "is_sensitive": true
+      },
+      {
+        "path": "/login",
+        "url": "https://adityauniversity.in/login",
+        "status_code": 301,
+        "content_length": 0,
+        "redirect_location": "https://www.adityauniversity.in/login",
+        "description": "Authentication Gateway",
+        "is_sensitive": false
+      },
+      {
+        "path": "/.gitignore",
+        "url": "https://adityauniversity.in/.gitignore",
+        "status_code": 301,
+        "content_length": 0,
+        "redirect_location": "https://www.adityauniversity.in/.gitignore",
+        "description": "Exposed Git Configuration",
+        "is_sensitive": true
+      },
+      {
+        "path": "/admin/login",
+        "url": "https://adityauniversity.in/admin/login",
+        "status_code": 301,
+        "content_length": 0,
+        "redirect_location": "https://www.adityauniversity.in/admin/login",
+        "description": "Admin Authentication Endpoint",
+        "is_sensitive": false
+      },
+      {
+        "path": "/administrator/",
+        "url": "https://adityauniversity.in/administrator/",
+        "status_code": 301,
+        "content_length": 0,
+        "redirect_location": "https://www.adityauniversity.in/administrator/",
+        "description": "Administrative Portal Variant",
+        "is_sensitive": false
+      },
+      {
+        "path": "/api/",
+        "url": "https://adityauniversity.in/api/",
+        "status_code": 301,
+        "content_length": 0,
+        "redirect_location": "https://www.adityauniversity.in/api/",
+        "description": "API Gateway Root",
+        "is_sensitive": false
+      },
+      {
+        "path": "/dashboard",
+        "url": "https://adityauniversity.in/dashboard",
+        "status_code": 301,
+        "content_length": 0,
+        "redirect_location": "https://www.adityauniversity.in/dashboard",
+        "description": "User/Admin Dashboard",
+        "is_sensitive": false
+      },
+      {
+        "path": "/api/v1/",
+        "url": "https://adityauniversity.in/api/v1/",
+        "status_code": 301,
+        "content_length": 0,
+        "redirect_location": "https://www.adityauniversity.in/api/v1/",
+        "description": "API v1 Endpoint Directory",
+        "is_sensitive": false
+      },
+      {
+        "path": "/admin/",
+        "url": "https://adityauniversity.in/admin/",
+        "status_code": 301,
+        "content_length": 0,
+        "redirect_location": "https://www.adityauniversity.in/admin/",
+        "description": "Administrative Control Portal",
+        "is_sensitive": false
+      },
+      {
+        "path": "/swagger.json",
+        "url": "https://adityauniversity.in/swagger.json",
+        "status_code": 301,
+        "content_length": 0,
+        "redirect_location": "https://www.adityauniversity.in/swagger.json",
+        "description": "OpenAPI / Swagger Definition",
+        "is_sensitive": true
+      },
+      {
+        "path": "/docs",
+        "url": "https://adityauniversity.in/docs",
+        "status_code": 301,
+        "content_length": 0,
+        "redirect_location": "https://www.adityauniversity.in/docs",
+        "description": "Interactive API Documentation",
+        "is_sensitive": false
+      },
+      {
+        "path": "/.env",
+        "url": "https://adityauniversity.in/.env",
+        "status_code": 301,
+        "content_length": 0,
+        "redirect_location": "https://www.adityauniversity.in/.env",
+        "description": "Exposed Environment Configuration",
+        "is_sensitive": true
+      },
+      {
+        "path": "/backup.sql",
+        "url": "https://adityauniversity.in/backup.sql",
+        "status_code": 301,
+        "content_length": 0,
+        "redirect_location": "https://www.adityauniversity.in/backup.sql",
+        "description": "Raw SQL Dump Archive",
+        "is_sensitive": true
+      },
+      {
+        "path": "/backup.zip",
+        "url": "https://adityauniversity.in/backup.zip",
+        "status_code": 301,
+        "content_length": 0,
+        "redirect_location": "https://www.adityauniversity.in/backup.zip",
+        "description": "Database / Source Backup Archive",
+        "is_sensitive": true
+      },
+      {
+        "path": "/config.php",
+        "url": "https://adityauniversity.in/config.php",
+        "status_code": 301,
+        "content_length": 0,
+        "redirect_location": "https://www.adityauniversity.in/config.php",
+        "description": "PHP Configuration File",
+        "is_sensitive": true
+      },
+      {
+        "path": "/config.json",
+        "url": "https://adityauniversity.in/config.json",
+        "status_code": 301,
+        "content_length": 0,
+        "redirect_location": "https://www.adityauniversity.in/config.json",
+        "description": "JSON Configuration File",
+        "is_sensitive": true
+      },
+      {
+        "path": "/test/",
+        "url": "https://adityauniversity.in/test/",
+        "status_code": 301,
+        "content_length": 0,
+        "redirect_location": "https://www.adityauniversity.in/test/",
+        "description": "Staging / Test Environment Directory",
+        "is_sensitive": false
+      },
+      {
+        "path": "/debug",
+        "url": "https://adityauniversity.in/debug",
+        "status_code": 301,
+        "content_length": 0,
+        "redirect_location": "https://www.adityauniversity.in/debug",
+        "description": "Debug Interface / Endpoint",
+        "is_sensitive": true
+      }
+    ],
+    "total_tested": 20,
+    "total_discovered": 20
+  },
+  "auditor": "admin",
+  "author": "Amit Kumar Mahato",
+  "risk_summary": {
+    "overall_score": 5.1,
+    "counts": {
+      "CRITICAL": 0,
+      "HIGH": 1,
+      "MEDIUM": 1,
+      "LOW": 2,
+      "INFORMATIONAL": 1
+    },
+    "total_findings": 5
+  },
+  "findings": [
+    {
+      "title": "Missing Content-Security-Policy",
+      "severity": "MEDIUM",
+      "category": "Security Misconfiguration",
+      "owasp_id": "A05:2021-Security Misconfiguration",
+      "cwe_id": "CWE-693",
+      "evidence": "Content-Security-Policy header is absent.",
+      "recommendation": "Define an authorized CSP restricting script and object sources.",
+      "confidence": "HIGH",
+      "details": {},
+      "cvss_score": 5.3
+    },
+    {
+      "title": "Missing Anti-Clickjacking Header (X-Frame-Options)",
+      "severity": "LOW",
+      "category": "Security Misconfiguration",
+      "owasp_id": "A05:2021-Security Misconfiguration",
+      "cwe_id": "CWE-1021",
+      "evidence": "X-Frame-Options and frame-ancestors are absent.",
+      "recommendation": "Set 'X-Frame-Options: DENY' or 'SAMEORIGIN'.",
+      "confidence": "HIGH",
+      "details": {},
+      "cvss_score": 3.1
+    },
+    {
+      "title": "Missing or Incomplete X-Content-Type-Options",
+      "severity": "LOW",
+      "category": "Security Misconfiguration",
+      "owasp_id": "A05:2021-Security Misconfiguration",
+      "cwe_id": "CWE-693",
+      "evidence": "X-Content-Type-Options header absent or lacks 'nosniff'.",
+      "recommendation": "Configure 'X-Content-Type-Options: nosniff'.",
+      "confidence": "HIGH",
+      "details": {},
+      "cvss_score": 3.1
+    },
+    {
+      "title": "Information Disclosure via Web Server Banner",
+      "severity": "INFORMATIONAL",
+      "category": "Information Disclosure",
+      "owasp_id": "A05:2021-Security Misconfiguration",
+      "cwe_id": "CWE-200",
+      "evidence": "Exposed via 'server': Apache/2.4.58 (Ubuntu)",
+      "recommendation": "Suppress the 'server' header in production.",
+      "confidence": "HIGH",
+      "details": {},
+      "cvss_score": 0.0
+    },
+    {
+      "title": "Cookie 'XSRF-TOKEN' Missing 'HttpOnly' Attribute",
+      "severity": "HIGH",
+      "category": "Insecure State Management",
+      "owasp_id": "A05:2021-Security Misconfiguration",
+      "cwe_id": "CWE-1004",
+      "evidence": "Directive: XSRF-TOKEN=eyJpdiI6Inp4MXFhcEIxa2RFY2poQzd5SWhIL2c9PSIsInZhbHVlIjoiSC83L3NLekxlYzVPNWgrTUNCbk5oRjFsQSt4WmZXTWlXTFVXb0xxaWtQVTBEL09GZXRDUFhsSmdKZ09FQXdLeldSR1plV00vRlZsSEpYd0RRc1FManpWakxZWkZwUEhIRWJ5Y0FrTVhNT0NFaEtBVk1yWnRDK3pEaGZ4SlZFalMiLCJtYWMiOiIwZDc1NjFiZGRmMDE2ZThkOWI3MDk3NDljMDcxZTkwYjk0MzgyZjJhZGQwZjQ4YWMzMjJkZDYxYWQ3MGFlNDc0IiwidGFnIjoiIn0%3D; expires=Tue, 22 Sep 2026 12:14:48 GMT; Max-Age=7200; path=/; secure; samesite=lax",
+      "recommendation": "Append '; HttpOnly' to prevent script accessibility.",
+      "confidence": "HIGH",
+      "details": {},
+      "cvss_score": 7.5
+    }
+  ],
+  "technologies": [
+    {
+      "name": "Apache HTTP Server",
+      "category": "Web Server / CDN",
+      "evidence": "Server Header: Apache/2.4.58 (Ubuntu)"
+    }
+  ],
+  "metrics": {
+    "pages_crawled": 2,
+    "forms_found": 4,
+    "duration_sec": 1.37
+  }
+}

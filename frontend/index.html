@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CyberAge — Enterprise 3D Web VAPT Suite</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #030712; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    
+    .glass {
+      background: rgba(10, 15, 29, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(6, 182, 212, 0.2);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+    }
+    
+    .glass-glow {
+      box-shadow: 0 0 25px rgba(6, 182, 212, 0.15), inset 0 0 15px rgba(6, 182, 212, 0.05);
+    }
+
+    .neon-border {
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      transition: all 0.3s ease;
+    }
+    .neon-border:hover {
+      border-color: rgba(6, 182, 212, 0.9);
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.35);
+    }
+
+    #webgl-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .hud-grid {
+      background-size: 30px 30px;
+      background-image: 
+        linear-gradient(to right, rgba(6, 182, 212, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(6, 182, 212, 0.03) 1px, transparent 1px);
+    }
+
+    @media print {
+      body { background: white !important; color: black !important; }
+      header, #scanInputSection, #loginGateway, .no-print, #webgl-canvas { display: none !important; }
+      .glass { background: none !important; border: 1px solid #ccc !important; box-shadow: none !important; color: black !important; }
+      #resultsView { display: block !important; }
+      .text-white, .text-cyan-400, .text-amber-400 { color: black !important; font-weight: bold !important; }
+    }
+  </style>
+</head>
+<body class="text-slate-100 min-h-screen selection:bg-cyan-500 selection:text-black hud-grid relative overflow-x-hidden">
+
+  <!-- 3D Background Canvas -->
+  <canvas id="webgl-canvas"></canvas>
+
+  <!-- RESTRICTED LOGIN GATEWAY OVERLAY -->
+  <div id="loginGateway" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-2xl transition-all duration-500">
+    <div class="relative w-full max-w-md p-8 rounded-3xl bg-slate-900/90 border border-cyan-500/50 shadow-2xl shadow-cyan-500/20 glass overflow-hidden">
+      <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent"></div>
+
+      <div class="text-center mb-6">
+        <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-cyan-950/80 border border-cyan-500/50 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+          <i data-lucide="shield-alert" class="w-7 h-7 text-cyan-400"></i>
+        </div>
+        <h2 class="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 via-sky-200 to-white bg-clip-text text-transparent">
+          CyberAge VAPT Gateway
+        </h2>
+        <p class="text-xs text-slate-400 mt-1 font-mono">Restricted Security Operator Terminal</p>
+      </div>
+
+      <!-- Error Alert Box -->
+      <div id="loginError" class="hidden mb-4 p-3 rounded-xl bg-rose-950/70 border border-rose-800 text-rose-300 text-xs flex items-center gap-2">
+        <i data-lucide="alert-octagon" class="w-4 h-4 shrink-0"></i>
+        <span id="loginErrorMsg">Invalid Clearance Credentials</span>
+      </div>
+
+      <form onsubmit="handleSecureLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-[11px] font-mono uppercase text-slate-400 mb-1.5 tracking-wider">Operator Identity</label>
+          <div class="relative">
+            <i data-lucide="user" class="w-4 h-4 text-slate-500 absolute left-3.5 top-3"></i>
+            <input id="loginUsername" type="text" required placeholder="admin"
+              class="w-full bg-slate-950/90 border border-slate-700/80 focus:border-cyan-400 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white font-mono outline-none transition focus:ring-1 focus:ring-cyan-500" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-mono uppercase text-slate-400 mb-1.5 tracking-wider">Clearance Key</label>
+          <div class="relative">
+            <i data-lucide="key" class="w-4 h-4 text-slate-500 absolute left-3.5 top-3"></i>
+            <input id="loginPassword" type="password" required placeholder="••••••••••••"
+              class="w-full bg-slate-950/90 border border-slate-700/80 focus:border-cyan-400 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white font-mono outline-none transition focus:ring-1 focus:ring-cyan-500" />
+          </div>
+        </div>
+
+        <button id="loginSubmitBtn" type="submit"
+          class="w-full py-3 mt-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-extrabold text-xs tracking-wider font-mono shadow-lg shadow-cyan-500/25 transition flex items-center justify-center gap-2">
+          <i data-lucide="unlock" class="w-4 h-4"></i>
+          <span>AUTHENTICATE OPERATOR</span>
+        </button>
+      </form>
+
+      <div class="mt-6 pt-4 border-t border-slate-800 text-center text-[11px] text-slate-400 font-mono">
+        Default Access: <span class="text-cyan-400 font-bold">admin</span> / <span class="text-cyan-400 font-bold">CyberAge@2026#Secure</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header HUD -->
+  <header class="border-b border-cyan-900/40 bg-slate-950/70 sticky top-0 z-40 backdrop-blur-md relative">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+          <i data-lucide="shield-check" class="w-6 h-6 text-black"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 via-sky-200 to-white bg-clip-text text-transparent flex items-center gap-2">
+            CyberAge <span class="text-xs font-mono text-cyan-400 px-2 py-0.5 rounded-full bg-cyan-950 border border-cyan-800 font-semibold">v2.1 3D</span>
+          </h1>
+          <p class="text-xs text-slate-400 font-mono">Enterprise Attack Surface Recon, ThreatPulse & VAPT Auditing</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 text-xs">
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/80 border border-cyan-900/50 text-slate-300">
+          <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          Author: <span class="font-bold text-white tracking-wide">Amit Kumar Mahato</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <a href="https://github.com/winxx-ops" target="_blank" rel="noopener noreferrer" 
+            class="p-2 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-cyan-900/40 hover:border-cyan-400 text-slate-300 hover:text-white transition flex items-center gap-1.5" title="Author GitHub">
+            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            <span class="font-semibold hidden sm:inline font-mono">GitHub</span>
+          </a>
+          <a href="https://www.linkedin.com/in/amit-kumar-mahato-859206226" target="_blank" rel="noopener noreferrer" 
+            class="p-2 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-cyan-900/40 hover:border-cyan-400 text-slate-300 hover:text-white transition flex items-center gap-1.5" title="Author LinkedIn">
+            <svg class="w-4 h-4 fill-current text-cyan-400" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+            <span class="font-semibold hidden sm:inline font-mono">LinkedIn</span>
+          </a>
+        </div>
+        
+        <div id="sessionBox" class="flex items-center gap-2 pl-3 border-l border-slate-800">
+          <span id="operatorBadge" class="font-mono text-cyan-400 text-xs font-bold">admin</span>
+          <button onclick="handleLogout()" class="text-rose-400 hover:text-rose-300 p-1.5 transition" title="Sign Out">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-6 py-8 relative z-10 space-y-8">
+    
+    <!-- Target Input Section -->
+    <section id="scanInputSection" class="glass glass-glow p-6 rounded-3xl border border-cyan-500/30">
+      <div class="flex flex-col md:flex-row gap-4">
+        <div class="flex-1 relative">
+          <i data-lucide="globe" class="w-5 h-5 text-cyan-500 absolute left-4 top-3.5"></i>
+          <input id="targetInput" type="text" placeholder="https://example.com or http://demo.testfire.net"
+            class="w-full bg-slate-950/80 border border-slate-700/80 focus:border-cyan-400 rounded-2xl pl-12 pr-4 py-3 text-slate-100 focus:outline-none font-mono text-sm tracking-wide focus:ring-1 focus:ring-cyan-500 transition shadow-inner" />
+        </div>
+        <button id="scanBtn" onclick="runScan()"
+          class="bg-gradient-to-r from-cyan-500 via-sky-400 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-extrabold px-8 py-3 rounded-2xl transition flex items-center justify-center gap-2 font-mono shadow-lg shadow-cyan-500/30">
+          <i data-lucide="radar" class="w-5 h-5 text-black"></i>
+          <span>EXECUTE FULL VAPT AUDIT</span>
+        </button>
+      </div>
+      <div id="statusAlert" class="hidden mt-4 p-3 rounded-2xl text-xs flex items-center gap-2"></div>
+    </section>
+
+    <!-- Results Workspace -->
+    <div id="resultsView" class="hidden space-y-8">
+      
+      <!-- Top Action Bar -->
+      <div class="flex justify-between items-center no-print">
+        <span class="text-xs uppercase font-mono font-bold text-cyan-400 tracking-wider flex items-center gap-2">
+          <span class="h-2 w-2 rounded-full bg-cyan-400 animate-ping"></span> Live Assessment Telemetry
+        </span>
+        <button onclick="window.print()" class="px-4 py-2 bg-slate-900/90 hover:bg-slate-800 border border-cyan-500/40 rounded-xl text-xs font-mono font-bold text-white flex items-center gap-2 transition shadow-lg shadow-cyan-500/10">
+          <i data-lucide="printer" class="w-4 h-4 text-cyan-400"></i>
+          <span>EXPORT EXECUTIVE PDF / PRINT</span>
+        </button>
+      </div>
+
+      <!-- Metrics Row -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="glass p-5 rounded-2xl border-l-4 border-amber-500 neon-border">
+          <span class="text-xs uppercase text-slate-400 font-mono tracking-wider">Overall Risk Score</span>
+          <div id="riskValue" class="text-3xl font-extrabold text-amber-400 mt-2 font-mono">0.0 / 10</div>
+        </div>
+        <div class="glass p-5 rounded-2xl border-l-4 border-cyan-500 neon-border">
+          <span class="text-xs uppercase text-slate-400 font-mono tracking-wider">Open TCP Ports</span>
+          <div id="openPortsCount" class="text-3xl font-extrabold text-cyan-400 mt-2 font-mono">0</div>
+        </div>
+        <div class="glass p-5 rounded-2xl border-l-4 border-sky-500 neon-border">
+          <span class="text-xs uppercase text-slate-400 font-mono tracking-wider">Flaws Detected</span>
+          <div id="findingsCount" class="text-3xl font-extrabold text-white mt-2 font-mono">0</div>
+        </div>
+        <div class="glass p-5 rounded-2xl border-l-4 border-emerald-500 neon-border">
+          <span class="text-xs uppercase text-slate-400 font-mono tracking-wider">Audit Duration</span>
+          <div id="timeValue" class="text-3xl font-extrabold text-emerald-400 mt-2 font-mono">0.0s</div>
+        </div>
+      </div>
+
+      <!-- 4-WAY NEON HUD INTELLIGENCE GRID -->
+      <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        
+        <!-- Card 1: ThreatPulse Radar -->
+        <div class="glass p-6 rounded-2xl space-y-4 neon-border">
+          <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-2 font-mono">
+              <i data-lucide="shield-alert" class="w-4 h-4"></i> ThreatPulse
+            </h3>
+            <span id="threatBadge" class="text-[10px] font-mono px-2 py-0.5 rounded font-bold bg-slate-800 text-slate-300">Evaluating</span>
+          </div>
+
+          <div class="space-y-2 text-xs font-mono">
+            <div class="flex justify-between items-center py-1 border-b border-slate-900">
+              <span class="text-slate-400">Verdict:</span>
+              <span id="threatVerdict" class="text-emerald-400 font-bold">CLEAN</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-900">
+              <span class="text-slate-400">Threat Risk:</span>
+              <span id="threatScore" class="text-cyan-400 font-bold">0 / 100</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-900">
+              <span class="text-slate-400">DNSBL Feeds:</span>
+              <span id="threatDnsbl" class="text-slate-300">Clean</span>
+            </div>
+            <div class="flex justify-between py-1">
+              <span class="text-slate-400">Class:</span>
+              <span id="threatCategory" class="text-slate-300 truncate max-w-[120px]">Safe Web Asset</span>
+            </div>
+          </div>
+
+          <div id="threatFactorsList" class="space-y-1 text-[11px] pt-1 border-t border-slate-900 font-mono"></div>
+        </div>
+
+        <!-- Card 2: Server Geolocation -->
+        <div class="glass p-6 rounded-2xl space-y-4 neon-border">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-2 border-b border-slate-800 pb-3 font-mono">
+            <i data-lucide="map-pin" class="w-4 h-4"></i> Geolocation
+          </h3>
+          
+          <div class="space-y-2 text-xs font-mono">
+            <div class="flex justify-between items-center py-1 border-b border-slate-900">
+              <span class="text-slate-400">Country:</span>
+              <span class="text-white font-bold flex items-center gap-1.5">
+                <span id="geoFlag" class="text-base">🌐</span>
+                <span id="geoCountry">Unknown</span>
+              </span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-900">
+              <span class="text-slate-400">City/Region:</span>
+              <span id="geoCityRegion" class="text-slate-300 truncate max-w-[130px]">Unknown</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-900">
+              <span class="text-slate-400">Coordinates:</span>
+              <span id="geoCoords" class="text-cyan-400">0.0, 0.0</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-900">
+              <span class="text-slate-400">ISP / Host:</span>
+              <span id="geoIsp" class="text-slate-300 truncate max-w-[120px]">Unknown</span>
+            </div>
+            <div class="flex justify-between py-1">
+              <span class="text-slate-400">Autonomous:</span>
+              <span id="geoAsn" class="text-indigo-400 font-bold">Unknown</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: DNS Routing -->
+        <div class="glass p-6 rounded-2xl space-y-4 neon-border">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-2 border-b border-slate-800 pb-3 font-mono">
+            <i data-lucide="network" class="w-4 h-4"></i> DNS Routing
+          </h3>
+          
+          <div class="space-y-2 text-xs font-mono">
+            <div class="flex justify-between py-1 border-b border-slate-900">
+              <span class="text-slate-400">Target IP:</span>
+              <span id="reconIp" class="text-white font-bold">0.0.0.0</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-900">
+              <span class="text-slate-400">Reverse PTR:</span>
+              <span id="reconPtr" class="text-slate-300 truncate max-w-[120px]">N/A</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-900">
+              <span class="text-slate-400">CNAME:</span>
+              <span id="reconCname" class="text-slate-300 truncate max-w-[120px]">None</span>
+            </div>
+          </div>
+
+          <div id="dnsRecordChips" class="space-y-1.5 text-xs pt-1 font-mono"></div>
+        </div>
+
+        <!-- Card 4: Open Ports -->
+        <div class="glass p-6 rounded-2xl space-y-4 neon-border">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-2 border-b border-slate-800 pb-3 font-mono">
+            <i data-lucide="server" class="w-4 h-4"></i> Port Scanner
+          </h3>
+          
+          <div class="overflow-y-auto max-h-[175px]">
+            <table class="w-full text-left text-xs font-mono">
+              <thead>
+                <tr class="border-b border-slate-800 text-slate-400">
+                  <th class="py-1.5">PORT</th>
+                  <th class="py-1.5">SERVICE</th>
+                  <th class="py-1.5">STATE</th>
+                </tr>
+              </thead>
+              <tbody id="portScanTable" class="divide-y divide-slate-900 text-slate-300"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- SUBDOMAINS ATTACK SURFACE -->
+      <section class="glass p-6 rounded-3xl space-y-4 neon-border">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-2 font-mono">
+            <i data-lucide="globe-2" class="w-4 h-4"></i> Passive Subdomain Enumeration (Certificate Transparency)
+          </h3>
+          <span id="subdomainSummary" class="text-xs font-mono text-slate-400">0 subdomains mapped</span>
+        </div>
+        <div id="subdomainStream" class="flex flex-wrap gap-2 max-h-[160px] overflow-y-auto pt-1 font-mono"></div>
+      </section>
+
+      <!-- GOBUSTER CONTENT DISCOVERY -->
+      <section class="glass p-6 rounded-3xl space-y-4 neon-border">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-2 font-mono">
+            <i data-lucide="folder-search" class="w-4 h-4"></i> Directory & Sensitive Endpoint Discovery (Gobuster Module)
+          </h3>
+          <span id="dirDiscoverySummary" class="text-xs font-mono text-slate-400">0 paths discovered</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs font-mono">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400">
+                <th class="py-2">STATUS</th>
+                <th class="py-2">ENDPOINT PATH</th>
+                <th class="py-2">SIZE</th>
+                <th class="py-2">CLASSIFICATION</th>
+                <th class="py-2">TARGET URL</th>
+              </tr>
+            </thead>
+            <tbody id="dirScanTable" class="divide-y divide-slate-900 text-slate-300">
+              <tr><td colspan="5" class="py-3 text-slate-500 italic text-center">Execute a scan to discover active paths and hidden configurations.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Web Tech Detected -->
+      <section class="glass p-5 rounded-2xl neon-border">
+        <h3 class="text-xs uppercase font-bold text-slate-400 tracking-wider mb-3 flex items-center gap-2 font-mono">
+          <i data-lucide="layers" class="w-4 h-4 text-cyan-400"></i> Fingerprinted Web Technologies
+        </h3>
+        <div id="techStream" class="flex flex-wrap gap-2 font-mono"></div>
+      </section>
+
+      <!-- Findings Stream -->
+      <section class="space-y-4">
+        <div class="flex justify-between items-center">
+          <h3 class="text-lg font-bold text-white flex items-center gap-2 font-mono">
+            <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-400"></i> Vulnerability Audit Stream
+          </h3>
+          <div class="flex gap-1.5 p-1 bg-slate-950/80 border border-slate-800 rounded-xl text-xs no-print font-mono">
+            <button onclick="filterFindings('ALL')" class="filter-tab px-3 py-1 rounded-lg font-semibold bg-cyan-500 text-black">All</button>
+            <button onclick="filterFindings('HIGH')" class="filter-tab px-3 py-1 rounded-lg text-slate-400 hover:text-white">High</button>
+            <button onclick="filterFindings('MEDIUM')" class="filter-tab px-3 py-1 rounded-lg text-slate-400 hover:text-white">Medium</button>
+            <button onclick="filterFindings('LOW')" class="filter-tab px-3 py-1 rounded-lg text-slate-400 hover:text-white">Low</button>
+          </div>
+        </div>
+        <div id="findingsStream" class="space-y-4"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <script>
+    let scanResults = [];
+
+    // --- THREE.JS 3D AMBIENT GLOBE & PARTICLE MATRIX ---
+    const canvas = document.getElementById('webgl-canvas');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 2.8;
+
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    // Wireframe Sphere
+    const sphereGeo = new THREE.SphereGeometry(1.2, 28, 28);
+    const sphereMat = new THREE.MeshBasicMaterial({
+      color: 0x06b6d4,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.12
+    });
+    const globe = new THREE.Mesh(sphereGeo, sphereMat);
+    scene.add(globe);
+
+    // Orbiting Cyber Rings
+    const ringGeo = new THREE.RingGeometry(1.4, 1.42, 64);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.25 });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = Math.PI / 3;
+    scene.add(ring);
+
+    // Particle Stars
+    const particleCount = 200;
+    const particleGeo = new THREE.BufferGeometry();
+    const posArray = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount * 3; i++) {
+      posArray[i] = (Math.random() - 0.5) * 8;
+    }
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+    const particleMat = new THREE.PointsMaterial({ size: 0.015, color: 0x22d3ee, transparent: true, opacity: 0.4 });
+    const particles = new THREE.Points(particleGeo, particleMat);
+    scene.add(particles);
+
+    function animate() {
+      requestAnimationFrame(animate);
+      globe.rotation.y += 0.0015;
+      globe.rotation.x += 0.0005;
+      ring.rotation.z += 0.002;
+      particles.rotation.y -= 0.0003;
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // --- ESCAPE HTML UTILITY ---
+    function escapeHTML(str) {
+      if (!str && str !== 0) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // --- AUTHENTICATION ENFORCEMENT ---
+    function checkAuthentication() {
+      const token = localStorage.getItem('cyberage_token');
+      const gateway = document.getElementById('loginGateway');
+      
+      if (!token) {
+        gateway.classList.remove('hidden');
+        gateway.classList.add('flex');
+      } else {
+        gateway.classList.add('hidden');
+        gateway.classList.remove('flex');
+        const operator = localStorage.getItem('cyberage_operator') || 'admin';
+        document.getElementById('operatorBadge').innerText = escapeHTML(operator);
+      }
+    }
+
+    async function handleSecureLogin(e) {
+      e.preventDefault();
+      const username = document.getElementById('loginUsername').value.trim();
+      const password = document.getElementById('loginPassword').value.trim();
+      const errBox = document.getElementById('loginError');
+      const errMsg = document.getElementById('loginErrorMsg');
+      const btn = document.getElementById('loginSubmitBtn');
+
+      errBox.classList.add('hidden');
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>VERIFYING CLEARANCE...</span>`;
+      lucide.createIcons();
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.detail || "Authentication clearance failed.");
+        }
+
+        const data = await res.json();
+        localStorage.setItem('cyberage_token', data.access_token);
+        localStorage.setItem('cyberage_operator', data.operator);
+
+        checkAuthentication();
+      } catch (err) {
+        errMsg.innerText = err.message;
+        errBox.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="unlock" class="w-4 h-4"></i><span>AUTHENTICATE OPERATOR</span>`;
+        lucide.createIcons();
+      }
+    }
+
+    function handleLogout() {
+      localStorage.removeItem('cyberage_token');
+      localStorage.removeItem('cyberage_operator');
+      location.reload();
+    }
+
+    // --- RUN SCAN EXECUTION ---
+    async function runScan() {
+      const target = document.getElementById('targetInput').value.trim();
+      const btn = document.getElementById('scanBtn');
+      const alertBox = document.getElementById('statusAlert');
+      const token = localStorage.getItem('cyberage_token');
+
+      if (!token) {
+        checkAuthentication();
+        return;
+      }
+      if (!target) return alert("Please specify a target URL.");
+
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin text-black"></i><span>EXECUTING VAPT SUITE...</span>`;
+      alertBox.className = "mt-4 p-3 rounded-2xl text-xs flex items-center gap-2 bg-cyan-950/80 border border-cyan-500/50 text-cyan-300 font-mono";
+      alertBox.innerHTML = `<i data-lucide="radar" class="w-4 h-4 animate-spin"></i> Probing ThreatPulse radar, subdomains, ports, endpoints, and OWASP flaws...`;
+      alertBox.classList.remove('hidden');
+      lucide.createIcons();
+
+      try {
+        const res = await fetch('/api/scan', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ target_url: target })
+        });
+
+        if (res.status === 401) {
+          handleLogout();
+          throw new Error("Clearance session expired. Please authenticate again.");
+        }
+        if (res.status === 429) {
+          throw new Error("Rate limit exceeded: Max 10 scans per minute.");
+        }
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || "Scan request failed.");
+        }
+
+        const data = await res.json();
+        scanResults = data.findings || [];
+        renderResults(data);
+
+        alertBox.className = "mt-4 p-3 rounded-2xl text-xs flex items-center gap-2 bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 font-mono";
+        alertBox.innerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4"></i> Full VAPT Assessment Telemetry Complete.`;
+      } catch (err) {
+        alertBox.className = "mt-4 p-3 rounded-2xl text-xs flex items-center gap-2 bg-rose-950/80 border border-rose-500/50 text-rose-300 font-mono";
+        alertBox.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4"></i> ${escapeHTML(err.message)}`;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="radar" class="w-5 h-5 text-black"></i><span>EXECUTE FULL VAPT AUDIT</span>`;
+        lucide.createIcons();
+      }
+    }
+
+    function renderResults(data) {
+      const resultsView = document.getElementById('resultsView');
+      resultsView.classList.remove('hidden');
+
+      const risk = data.risk_summary || {};
+      const metrics = data.metrics || {};
+      const recon = data.recon || {};
+
+      document.getElementById('riskValue').innerText = `${risk.overall_score ?? 0.0} / 10`;
+      document.getElementById('openPortsCount').innerText = recon.open_ports ? recon.open_ports.length : 0;
+      document.getElementById('findingsCount').innerText = risk.total_findings ?? 0;
+      document.getElementById('timeValue').innerText = `${metrics.duration_sec ?? 0.0}s`;
+
+      // ThreatPulse Render
+      const tp = data.threatpulse || {};
+      const tBadge = document.getElementById('threatBadge');
+      const tVerdict = document.getElementById('threatVerdict');
+      const tScore = document.getElementById('threatScore');
+      const tDnsbl = document.getElementById('threatDnsbl');
+      const tCat = document.getElementById('threatCategory');
+      const tList = document.getElementById('threatFactorsList');
+
+      tScore.innerText = `${tp.threat_score ?? 0} / 100`;
+      tCat.innerText = (tp.categories && tp.categories.length) ? tp.categories.join(', ') : 'Standard Web Host';
+
+      if (tp.verdict === 'MALICIOUS') {
+        tBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800 font-bold';
+        tBadge.innerText = 'HIGH RISK';
+        tVerdict.innerText = 'MALICIOUS';
+        tVerdict.className = 'text-rose-400 font-bold';
+      } else if (tp.verdict === 'SUSPICIOUS') {
+        tBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800 font-bold';
+        tBadge.innerText = 'SUSPICIOUS';
+        tVerdict.innerText = 'SUSPICIOUS';
+        tVerdict.className = 'text-amber-400 font-bold';
+      } else {
+        tBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold';
+        tBadge.innerText = 'CLEAN';
+        tVerdict.innerText = 'CLEAN / SAFE';
+        tVerdict.className = 'text-emerald-400 font-bold';
+      }
+
+      tDnsbl.innerText = tp.blacklists_flagged > 0 
+        ? `${tp.blacklists_flagged} Blacklists Flagged` 
+        : `0/${tp.blacklists_checked || 3} Feeds Flagged`;
+
+      tList.innerHTML = '';
+      if (tp.factors && tp.factors.length > 0) {
+        const triggered = tp.factors.filter(f => f.triggered);
+        if (triggered.length > 0) {
+          tList.innerHTML = '<span class="text-slate-400 block font-bold mb-1">Triggered Indicators:</span>' + 
+            triggered.map(f => `<div class="text-rose-300">• <strong>${escapeHTML(f.name)}:</strong> ${escapeHTML(f.details)}</div>`).join('');
+        } else {
+          tList.innerHTML = '<span class="text-emerald-400/80">✓ No reputation anomalies or malicious patterns identified.</span>';
+        }
+      }
+
+      // Geolocation Render
+      const g = recon.geo || {};
+      document.getElementById('geoFlag').innerText = g.flag_emoji || '🌐';
+      document.getElementById('geoCountry').innerText = `${g.country || 'Unknown'} ${g.country_code ? `(${g.country_code})` : ''}`;
+      document.getElementById('geoCityRegion').innerText = `${g.city || 'Unknown'}, ${g.region || ''}`;
+      document.getElementById('geoCoords').innerText = `${g.latitude || 0.0}, ${g.longitude || 0.0}`;
+      document.getElementById('geoIsp').innerText = g.isp || 'Unknown';
+      document.getElementById('geoAsn').innerText = g.asn || 'Unknown';
+
+      // DNS Render
+      document.getElementById('reconIp').innerText = recon.ip_address || '0.0.0.0';
+      document.getElementById('reconPtr').innerText = recon.reverse_ptr || 'N/A';
+      document.getElementById('reconCname').innerText = (recon.dns && recon.dns.cname) ? recon.dns.cname : 'None';
+
+      const dnsBox = document.getElementById('dnsRecordChips');
+      dnsBox.innerHTML = '';
+      if (recon.dns) {
+        const d = recon.dns;
+        if (d.mx_records && d.mx_records.length) {
+          dnsBox.innerHTML += `<div class="text-slate-400 text-[11px]"><strong class="text-cyan-400">MX:</strong> ${escapeHTML(d.mx_records[0])}</div>`;
+        }
+        if (d.ns_records && d.ns_records.length) {
+          dnsBox.innerHTML += `<div class="text-slate-400 text-[11px]"><strong class="text-cyan-400">NS:</strong> ${escapeHTML(d.ns_records[0])}</div>`;
+        }
+        if (d.aaaa_records && d.aaaa_records.length) {
+          dnsBox.innerHTML += `<div class="text-slate-400 text-[11px]"><strong class="text-cyan-400">IPv6:</strong> ${escapeHTML(d.aaaa_records[0])}</div>`;
+        }
+      }
+      if (!dnsBox.innerHTML) {
+        dnsBox.innerHTML = '<span class="text-slate-500 text-[11px] italic">No secondary DNS records discovered.</span>';
+      }
+
+      // Ports Render
+      const tableBody = document.getElementById('portScanTable');
+      tableBody.innerHTML = '';
+      if (!recon.open_ports || recon.open_ports.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="3" class="py-2 text-slate-500 italic text-center">No open ports identified.</td></tr>';
+      } else {
+        recon.open_ports.forEach(p => {
+          tableBody.innerHTML += `
+            <tr class="hover:bg-slate-900/50">
+              <td class="py-1.5 font-bold text-cyan-400">${p.port}/tcp</td>
+              <td class="py-1.5 text-white">${escapeHTML(p.service)}</td>
+              <td class="py-1.5"><span class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800">OPEN</span></td>
+            </tr>
+          `;
+        });
+      }
+
+      // Subdomains Render
+      const subSummary = document.getElementById('subdomainSummary');
+      const subStream = document.getElementById('subdomainStream');
+      subStream.innerHTML = '';
+      const subData = data.subdomains || { records: [] };
+      subSummary.innerText = `${subData.records.length} subdomains enumerated via CT logs`;
+      if (subData.records.length === 0) {
+        subStream.innerHTML = '<span class="text-xs text-slate-500 italic">No subdomains discovered in public CT logs.</span>';
+      } else {
+        subData.records.forEach(s => {
+          subStream.innerHTML += `
+            <span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-cyan-900/50 text-xs font-mono text-cyan-300">
+              ${escapeHTML(s)}
+            </span>
+          `;
+        });
+      }
+
+      // Gobuster Paths Render
+      const dirTable = document.getElementById('dirScanTable');
+      const dirSummary = document.getElementById('dirDiscoverySummary');
+      dirTable.innerHTML = '';
+      const dirData = data.directory_scan || { paths: [] };
+      const paths = dirData.paths || [];
+      dirSummary.innerText = `${paths.length} endpoints identified across dictionary targets`;
+
+      if (paths.length === 0) {
+        dirTable.innerHTML = '<tr><td colspan="5" class="py-3 text-slate-500 italic text-center">No common endpoints, exposed configurations, or directories responded with active status codes.</td></tr>';
+      } else {
+        paths.forEach(p => {
+          let badgeClass = 'bg-slate-800 text-slate-300 border-slate-700';
+          if (p.status_code === 200) badgeClass = 'bg-emerald-950 text-emerald-400 border-emerald-800';
+          else if (p.status_code === 403 || p.status_code === 401) badgeClass = 'bg-amber-950 text-amber-400 border-amber-800';
+          else if (p.status_code >= 300 && p.status_code < 400) badgeClass = 'bg-sky-950 text-sky-400 border-sky-800';
+
+          dirTable.innerHTML += `
+            <tr class="hover:bg-slate-900/50 transition">
+              <td class="py-2 font-bold"><span class="px-2 py-0.5 rounded text-[10px] border ${badgeClass}">${p.status_code}</span></td>
+              <td class="py-2 font-semibold text-white">${escapeHTML(p.path)} ${p.is_sensitive ? '<span class="ml-1 text-[10px] text-rose-400 font-bold px-1 rounded bg-rose-950 border border-rose-800">SENSITIVE</span>' : ''}</td>
+              <td class="py-2 text-slate-400">${p.content_length > 0 ? p.content_length + ' B' : 'N/A'}</td>
+              <td class="py-2 text-slate-300">${escapeHTML(p.description)}</td>
+              <td class="py-2"><a href="${escapeHTML(p.url)}" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline truncate max-w-[200px] block">${escapeHTML(p.url)}</a></td>
+            </tr>
+          `;
+        });
+      }
+
+      // Tech Render
+      const techBox = document.getElementById('techStream');
+      const techs = data.technologies || [];
+      techBox.innerHTML = techs.length === 0 
+        ? `<span class="text-xs text-slate-500">No technology banners detected.</span>`
+        : techs.map(t => `
+            <div class="px-3 py-1.5 rounded-lg bg-slate-900 border border-cyan-900/40 text-xs">
+              <span class="text-cyan-400 font-semibold">${escapeHTML(t.category)}:</span> <span class="text-white">${escapeHTML(t.name)}</span>
+            </div>`).join('');
+
+      filterFindings('ALL');
+      resultsView.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function filterFindings(severity) {
+      document.querySelectorAll('.filter-tab').forEach(b => {
+        b.className = "filter-tab px-3 py-1 rounded-lg text-slate-400 hover:text-white";
+        if (b.innerText.toUpperCase() === severity) {
+          b.className = "filter-tab px-3 py-1 rounded-lg font-semibold bg-cyan-500 text-black";
+        }
+      });
+
+      const container = document.getElementById('findingsStream');
+      container.innerHTML = '';
+
+      const filtered = severity === 'ALL' ? scanResults : scanResults.filter(f => f.severity === severity);
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="glass p-8 text-center rounded-2xl text-slate-400 text-sm font-mono">No findings matched this severity filter.</div>`;
+        return;
+      }
+
+      const badgeStyles = {
+        'CRITICAL': 'bg-red-950/80 text-red-400 border-red-800',
+        'HIGH': 'bg-orange-950/80 text-orange-400 border-orange-800',
+        'MEDIUM': 'bg-amber-950/80 text-amber-400 border-amber-800',
+        'LOW': 'bg-blue-950/80 text-blue-400 border-blue-800',
+        'INFORMATIONAL': 'bg-slate-800 text-slate-400 border-slate-700'
+      };
+
+      filtered.forEach((f) => {
+        const badge = badgeStyles[f.severity] || badgeStyles['LOW'];
+        container.innerHTML += `
+          <div class="glass p-6 rounded-2xl border border-cyan-900/40 hover:border-cyan-400/60 transition neon-border">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs font-bold px-2.5 py-0.5 rounded-full border ${badge} font-mono">${escapeHTML(f.severity)} (CVSS: ${escapeHTML(f.cvss_score)})</span>
+              <span class="text-xs font-mono text-slate-400">${escapeHTML(f.owasp_id)} • ${escapeHTML(f.cwe_id)}</span>
+            </div>
+            <h4 class="text-base font-bold text-white mb-2 font-mono">${escapeHTML(f.title)}</h4>
+            <div class="space-y-2 text-xs font-mono">
+              <div class="p-3 bg-slate-950 rounded-xl border border-slate-900 text-slate-300">
+                <span class="text-cyan-500 block mb-1">EVIDENCE:</span>
+                <span class="text-rose-300">${escapeHTML(f.evidence)}</span>
+              </div>
+              <div class="p-3 bg-cyan-950/20 rounded-xl border border-cyan-900/40 text-slate-300">
+                <span class="text-cyan-400 font-semibold block mb-1">REMEDIATION:</span>
+                ${escapeHTML(f.recommendation)}
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      lucide.createIcons();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      checkAuthentication();
+    });
+  </script>
+</body>
+</html>
